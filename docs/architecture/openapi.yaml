@@ -1,0 +1,175 @@
+openapi: 3.0.3
+info:
+  title: City Issues API
+  version: 0.1.0
+
+servers:
+  - url: http://localhost:3000/api/v1
+
+paths:
+  /auth/register:
+    post:
+      summary: Регистрация
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: {type: string}
+                password: {type: string}
+                display_name: {type: string}
+      responses:
+        '201':
+          description: TokenPair
+
+  /auth/login:
+    post:
+      summary: Вход
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: {type: string}
+                password: {type: string}
+      responses:
+        '200':
+          description: TokenPair
+
+  /auth/refresh:
+    post:
+      summary: Обновление токена
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token: {type: string}
+      responses:
+        '200':
+          description: TokenPair
+
+  /categories:
+    get:
+      summary: Список категорий
+      responses:
+        '200':
+          description: Category[]
+
+  /reports:
+    post:
+      summary: Создание обращения
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Report'
+      responses:
+        '201':
+          description: Report
+
+  /issues:
+    get:
+      summary: Список проблем
+      parameters:
+        - {name: bbox, in: query, schema: {type: string}}
+        - {name: status, in: query, schema: {type: string}}
+        - {name: category_id, in: query, schema: {type: integer}}
+        - {name: urgency, in: query, schema: {type: string}}
+        - {name: sort, in: query, schema: {type: string}}
+        - {name: page, in: query, schema: {type: integer}}
+        - {name: page_size, in: query, schema: {type: integer}}
+      responses:
+        '200':
+          description: Issue[] + pagination
+
+  /issues/{issueId}:
+    parameters:
+      - {name: issueId, in: path, required: true, schema: {type: string}}
+    get:
+      summary: Получение проблемы
+      responses:
+        '200':
+          description: Issue
+    patch:
+      summary: Изменение проблемы
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Issue'
+      responses:
+        '200':
+          description: Issue
+
+  /issues/{issueId}/merge:
+    post:
+      summary: Объединение проблем
+      parameters:
+        - {name: issueId, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                target_issue_id: {type: string}
+      responses:
+        '200':
+          description: Issue
+
+  /analytics/heatmap:
+    get:
+      summary: Тепловая карта
+      parameters:
+        - {name: bbox, in: query, schema: {type: string}}
+        - {name: category_id, in: query, schema: {type: integer}}
+        - {name: date_from, in: query, schema: {type: string}}
+        - {name: date_to, in: query, schema: {type: string}}
+        - {name: grid_size_m, in: query, schema: {type: integer}}
+      responses:
+        '200':
+          description: HeatmapResponse
+
+components:
+  schemas:
+    Report:
+      type: object
+      properties:
+        lat: {type: number}
+        lon: {type: number}
+        description: {type: string}
+        category_id: {type: integer}
+        photos: {type: array, items: {type: string, format: binary}}
+
+    Issue:
+      type: object
+      properties:
+        id: {type: string}
+        title: {type: string}
+        lat: {type: number}
+        lon: {type: number}
+        category_id: {type: integer}
+        status: {type: string}
+        urgency: {type: string}
+
+    HeatmapResponse:
+      type: object
+      properties:
+        points:
+          type: array
+          items:
+            type: object
+            properties:
+              lat: {type: number}
+              lon: {type: number}
+              issues_count: {type: integer}
